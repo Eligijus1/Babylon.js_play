@@ -1,0 +1,75 @@
+<html>
+<head>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <style>
+        body,#renderCanvas { width: 100%; height: 100%;}
+    </style>
+</head>
+<body topmargin="0" leftmargin="0">
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+        var createScene = function() {
+			// Create a scene filled in black color:
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3.Black;
+
+            // Add the camera of type BABYLON.ArcRotateCamera that allows us to look around, i.e. can be rotated around object:
+            const alpha =  Math.PI;
+            const beta = Math.PI;
+            const radius = 5;
+
+            const camera = new BABYLON.ArcRotateCamera("Camera", 0, 0, 0);
+            camera.setPosition(new BABYLON.Vector3(alpha, beta, radius));
+            camera.attachControl(canvas, true);
+
+			// Add the ambient light HemisphericLigh:
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0));
+
+			// A predefined box mesh:
+            const box = BABYLON.MeshBuilder.CreateBox("box", {});
+            box.position.x = 0.5;
+            box.position.y = 1;
+
+			// Cube is painted with a random color:
+            var boxMaterial = new BABYLON.StandardMaterial("material", scene);
+            boxMaterial.diffuseColor = BABYLON.Color3.Random();
+            box.material = boxMaterial;
+
+			// Change the color when the cube is clicked and move the cube after the color is changed:
+            box.actionManager = new BABYLON.ActionManager(scene);
+            box.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, 
+                function (evt) {
+                    var sourceBox = evt.meshUnderPointer;
+					
+					// Move the box upright:
+                    sourceBox.position.x += 0.1;
+                    sourceBox.position.y += 0.1;
+
+					// Update the color:
+                    boxMaterial.diffuseColor = BABYLON.Color3.Random();
+                }));
+
+			// Ground. The cube will be hanging in the air and we will see a floor at the bottom:
+            var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 4, height: 4});
+
+			// In order to add WebXR support, we need to call createDefaultXRExperienceAsync, which has a Promise result:
+            var xrPromise = scene.createDefaultXRExperienceAsync({
+                floorMeshes: [ground]
+            });
+
+            return xrPromise.then((xrExperience) => {
+                console.log("Done, WebXR is enabled.");
+                return scene;
+            });
+        };
+
+        createScene().then(sceneToRender => {
+            engine.runRenderLoop(() => sceneToRender.render());
+        });
+    </script>
+</body>
+</html>
